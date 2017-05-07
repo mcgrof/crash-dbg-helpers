@@ -81,3 +81,15 @@ algorithm, hash_str(). get_dm_cell_idx implements this in userspace and
 provided you also supply the base address of the full array of the linked lists
 (_name_buckets) you can get the address you can use to start looking for the
 respective private dm data structure.
+
+get_dm_staus
+------------
+
+If you need to determine the status of the struct mapped_device, get the
+struct mapped_device->flags and pass it to get_dm_status:
+
+crash> struct -x mapped_device.flags 0xffff89bd06dc9000
+  flags = 0x40
+
+$ ./get_dm_status 0x40
+DMF_MERGE_IS_OPTIONAL
