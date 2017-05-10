@@ -42,7 +42,6 @@ int main(int argc, char *argv[])
 
 	str_sizeof_list_head = argv[2];
 	sizeof_list_head = atoi(str_sizeof_list_head);
-	printf("Size of hash cell: %d\n", sizeof_hash_cell);
 
 	if (argc == 3)
 		printf("%s: Use _name_buckets[%u]\n", str, idx);
