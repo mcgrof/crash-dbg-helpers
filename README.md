@@ -11,6 +11,108 @@ dm-target debugging
 
 Debugging dm-targets can be a non-trivial task. Here are some tools to help.
 
+dm-target persistent names
+===========================
+
+Note that dm device numbers, ie, dm-13, are not persistent across reboots.
+This does not mean that they cannot be, this is very system specific.
+Persistent dm-names can be kept accross boots if DM_PERSISTENT_DEV_FLAG is
+passed to the DM_DEV_CREATE_CMD, in this case the dm core code would
+instantiate dm devices with DM_ANY_MINOR which means " give me the next
+available minor number". This sequence can be seen in dm-ioctl.c:dev_create
+function.
+
+Currently DM_PERSISTENT_DEV_FLAG is not explicitly used on lvm2, userspace
+tools set it only if the minor is set on the dm task created, for instance:
+
+lvcreate or lvchange --persistent y --major major --minor minor
+
+Note that even if none of this is used a system *can* boot with the same
+dm-target names ! So best is to just verify the dm-target and respective mount
+point yourselves. How to do this is explained below.
+
+Inspecting dm-target pending IO
+===============================
+
+If something is not going through you want to first inspect if any there is
+any pending IO. You do this as follows, and in this example there is no pending
+IO:
+
+crash> dev -d
+MAJOR GENDISK            NAME       REQUEST_QUEUE      TOTAL ASYNC  SYNC   DRV
+    8 ffff880fdae57800   sda        ffff880fdc2ad538       0     0     0     0
+    8 ffff880fdae58000   sdc        ffff880fde7b4e90       0     0     0     0
+    8 ffff880fdb5f3400   sde        ffff880fdc2ace50       0     0     0     0
+    8 ffff880fdb5b4c00   sdf        ffff880fdaef4ed0       0     0     0     0
+    8 ffff880fdb805c00   sdh        ffff880fdaef47e8       0     0     0     0
+    8 ffff880fdaeed400   sdg        ffff880fdae675f8       0     0     0     0
+    8 ffff880fdb5b8800   sdd        ffff880fde7b47a8       0     0     0     0
+  253 ffff881fe01a3400   dm-0       ffff881fddc20728       0     0     0     0
+    8 ffff880fdadb5800   sdb        ffff880fde7b5578       0     0     0     0
+    8 ffff880fdb5b4800   sdi        ffff880fda83f638       0     0     0     0
+    8 ffff880fdb5f2c00   sdj        ffff880fda83e868       0     0     0     0
+    8 ffff880fdc2f1000   sdk        ffff880fdc2ac768       0     0     0     0
+    8 ffff880fdae76000   sdl        ffff880fda83e180       0     0     0     0
+    8 ffff880fda7d0800   sdm        ffff880fdae66828       0     0     0     0
+    8 ffff880fda72e800   sdn        ffff880fdadc3678       0     0     0     0
+    8 ffff880fdafb2800   sdo        ffff880fda75f6b8       0     0     0     0
+  253 ffff881fdd833800   dm-1       ffff881fddc20e10       0     0     0     0
+    8 ffff880fda994000   sdp        ffff880fda75efd0       0     0     0     0
+  253 ffff880fdba02c00   dm-2       ffff880fdadc2f90       0     0     0     0
+  253 ffff881fdd82ec00   dm-3       ffff881fdce9f538       0     0     0     0
+  253 ffff880fda2fb800   dm-4       ffff880fdadc28a8       0     0     0     0
+  253 ffff881fdd812c00   dm-5       ffff881fdda5f578       0     0     0     0
+  253 ffff880fde1b2400   dm-6       ffff880fdae66f10       0     0     0     0
+  253 ffff881fddeee000   dm-7       ffff881fdce9e080       0     0     0     0
+  253 ffff881fddf3d400   dm-8       ffff881fdce9e768       0     0     0     0
+   11 ffff880fdb5a0c00   sr0        ffff881fddc214f8       0     0     0     0
+  253 ffff881fdecb5800   dm-9       ffff881fdda5e0c0       0     0     0     0
+  253 ffff881fdff36800   dm-10      ffff881fdee655b8       0     0     0     0
+  253 ffff881fdd811800   dm-11      ffff881fdd3f55f8       0     0     0     0
+  253 ffff881fdd829400   dm-12      ffff881fdee64ed0       0     0     0     0
+  253 ffff881fdd829c00   dm-13      ffff881fde84f638       0     0     0     0
+  253 ffff880d0f961800   dm-14      ffff880fdf1da280       0     0     0     0
+  253 ffff88198e0d4000   dm-15      ffff881fdee647e8       0     0     0     0
+  253 ffff8818733dd400   dm-16      ffff881fdee64100       0     0     0     0
+
+If you run into this situation and are inspecting a soft lockup you should
+first check the dm-status of the targets to verify they are not suspended.
+Getting the dm-target can vary depending on what you are debugging, but the
+crash dev -d list is a good start given you have access to the struct gendisk.
+
+Let's assume you have a suspicion that dm-13 might be suspended. You can do
+as follows:
+
+crash> dev -d | grep dm-13
+  253 ffff880fd8dd5400   dm-13      ffff880fde9bb778       0     0     0     0
+crash> struct gendisk.private_data ffff880fd8dd5400
+  private_data = 0xffff880fd8dd5800
+crash> struct -x mapped_device.pending,flags 0xffff880fd8dd5800
+  pending = {{
+      counter = 0x0
+    }, {
+      counter = 0x0
+    }},
+  flags = 0x43
+
+You can now use the get_dm_staus tool provided in this package and documented
+below.
+
+Verifying dm-target mount points
+================================
+
+Since dm-target names can not be persistent its worth to always check their
+mount points. You can do this by doing a reverse lookup on the struct
+super_block first using the mount point. For example, say you want to inspect
+xfs-path which is mounted on /some/ partition.
+
+crash> mount | grep p_accurevp
+ffff881fded2cec0 ffff881fde16cc00 xfs    /dev/mapper/vgSAN--some-disk-super-app /@/some/xfs-path
+crash> struct super_block.s_id ffff881fde16cc00
+  s_id = "dm-13\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"
+
+This tells us /some/xfs-path is mounted using dm-13.
+
 get_dm_cell_idx
 ----------------
 
