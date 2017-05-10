@@ -249,6 +249,54 @@ struct multipath {
   hw_handler_params = 0x0,
 ... etc
 
+get_name_buckets
+----------------
+
+If you want to just display the address of all _name_bucket struct list_head
+entries, assuming a struct list_head size of 16:
+
+$ ./get_name_buckets 0xffffffffa06137a0 16
+_name_buckets[0] = 0xffffffffa06137a0
+_name_buckets[1] = 0xffffffffa06137b0
+...
+_name_buckets[62] = 0xffffffffa0613b80
+_name_buckets[63] = 0xffffffffa0613b90
+
+To verify you can inspect the struct list_head manually for both against the
+symbol resolution used by crash. For instance let's verify _name_buckets[62]
+maps to 0xffffffffa0613b80:
+
+crash> struct list_head 0xffffffffa0613b80
+struct list_head {
+  next = 0xffff89bd077c5bc0,
+  prev = 0xffff89bd097a3f00
+}
+
+crash> p _name_buckets[62]
+$10 = {
+  next = 0xffff89bd077c5bc0,
+  prev = 0xffff89bd097a3f00
+}
+
+You can use these to inspect all dms in each bucket, say we want to inspect
+further _name_buckets[62] which we have verified is at 0xffffffffa0613b80:
+
+By name:
+
+crash> list -H -S hash_cell.name 0xffffffffa0613b80
+ffff89bd077c5bc0
+  name = 0xffff89bd07667480  "disk170113"
+ffff89bd097a3f00
+  name = 0xffff89bd0975f880  "disk170128"
+
+By UUID:
+
+crash> list -H -S hash_cell.uuid 0xffffffffa0613b80
+ffff89bd077c5bc0
+  uuid = 0xffff89bd077c5b80  "mpath-360060e8007e574000030e57400000071"
+ffff89bd097a3f00
+  uuid = 0xffff89bd097a3ec0  "mpath-360060e8007e574000030e57400000080"
+
 get_dm_staus
 ------------
 
