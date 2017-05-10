@@ -13,22 +13,20 @@
 /* struct mapped_device->flags */
 static void print_status(unsigned long flags)
 {
-	switch (flags) {
-	case (1 << DMF_BLOCK_IO_FOR_SUSPEND):
+	if (flags & (1 << DMF_BLOCK_IO_FOR_SUSPEND))
 		printf("DMF_BLOCK_IO_FOR_SUSPEND\n");
-	case (1 << DMF_SUSPENDED):
+	if (flags & (1 << DMF_SUSPENDED))
 		printf("DMF_SUSPENDED\n");
-	case (1 << DMF_FROZEN):
+	if (flags & (1 << DMF_FROZEN))
 		printf("DMF_FROZEN\n");
-	case (1 << DMF_FREEING):
+	if (flags & (1 << DMF_FREEING))
 		printf("DMF_FREEING\n");
-	case (1 << DMF_DELETING):
+	if (flags & (1 << DMF_DELETING))
 		printf("DMF_DELETING\n");
-	case (1 << DMF_NOFLUSH_SUSPENDING):
+	if (flags & (1 << DMF_NOFLUSH_SUSPENDING))
 		printf("DMF_NOFLUSH_SUSPENDING\n");
-	case (1 << DMF_MERGE_IS_OPTIONAL):
+	if (flags & (1 << DMF_MERGE_IS_OPTIONAL))
 		printf("DMF_MERGE_IS_OPTIONAL\n");
-	};
 }
 
 void usage(void)
