@@ -20,8 +20,8 @@ void usage(void)
 {
 	printf("Usage: get_dm_cell_idx <name> <sizeof-struct-hash-cell> [ <address of _name_buckets in hex>]\n");
 	printf("Examples:\n\n");
-	printf("\t./get_dm_cell_idx disk170211\n");
-	printf("\t./get_dm_cell_idx disk170211 0xffffffffa06137a0\n");
+	printf("\t./get_dm_cell_idx disk170211 16\n");
+	printf("\t./get_dm_cell_idx disk170211 16 0xffffffffa06137a0\n");
 	exit(1);
 }
 
