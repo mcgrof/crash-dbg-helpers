@@ -400,8 +400,8 @@ By UUID:
 	ffff89bd097a3f00
 	  uuid = 0xffff89bd097a3ec0  "mpath-360060e8007e574000030e57400000080"
 
-get_dm_staus
-------------
+get_dm_status
+-------------
 
 If you need to determine the status of the struct mapped_device, get the
 struct mapped_device->flags and pass it to get_dm_status:
