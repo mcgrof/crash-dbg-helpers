@@ -297,6 +297,7 @@ after the struct dm_targets. If the struct dm_table was at 0xffff887d890e9400
 then:
 
 Using python:
+
 	>>> import sys
 	>>> sys.stdout.write("0x%0x\n" % (0xffff887d890e9400 +  208))
 	0xffff887d890e94d0
